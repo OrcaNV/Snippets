@@ -1,2 +1,2 @@
 #!/bin/bash
-sudo du -hcs * | sort -rn
+sudo du -hcs * | sort -h
