@@ -13,8 +13,9 @@ now=$(date +%H%M)
 if ! grep -q $today FULL.dump; then
 
  echo Taking a dump...
- /usr/bin/mysql --default-character-set=utf8 --host=$HOST --user=$USER --password=$PASS $DBNAME -e "SET names 'utf8'; select * from analytics_db.vw_purchase_order_sg;" | sed 's/\t/;/g' > purchase_order.csv
- /usr/bin/mysql --host=$HOST --user=$USER --password=$PASS ods_utf8_db -e "SET names 'utf8'; select * from analytics_db.vw_equipment_sg;" | sed 's/\t/;/g' > equipment.csv
+# /usr/bin/mysql --default-character-set=utf8 --host=$HOST --user=$USER --password=$PASS $DBNAME -e "SET names 'utf8'; SELECT * INTO OUTFILE '/the_path_that_mysql_can_write_to/purchase_order_with_double_quotes.csv' FIELDS TERMINATED BY ',' ENCLOSED BY '\"' ESCAPED BY '\\\\' LINES TERMINATED BY '\\n' FROM analytics_db.vw_purchase_order;"
+ /usr/bin/mysql --default-character-set=utf8 --host=$HOST --user=$USER --password=$PASS $DBNAME -e "SET names 'utf8'; select * from analytics_db.vw_purchase_order;" | sed 's/\t/;/g' > purchase_order.csv
+ /usr/bin/mysql --host=$HOST --user=$USER --password=$PASS ods_utf8_db -e "SET names 'utf8'; select * from analytics_db.vw_equipment;" | sed 's/\t/;/g' > equipment.csv
 
  azure storage blob upload -q purchase_order.csv    data $today/purchase_order.csv
  azure storage blob upload -q equipment.csv     data $today/equipment.csv
@@ -26,8 +27,8 @@ if ! grep -q $today FULL.dump; then
 else
 
  echo Taking a dump...
- /usr/bin/mysql --default-character-set=utf8 --host=$HOST --user=$USER --password=$PASS $DBNAME -e "SET names 'utf8'; select * from analytics_db.vw_purchase_order_diff_sg;" | sed 's/\t/;/g' > purchase_order_diff.csv
- /usr/bin/mysql --host=$HOST --user=$USER --password=$PASS ods_utf8_db -e "SET names 'utf8'; select * from analytics_db.vw_equipment_diff_sg;" | sed 's/\t/;/g' > equipment_diff.csv
+ /usr/bin/mysql --default-character-set=utf8 --host=$HOST --user=$USER --password=$PASS $DBNAME -e "SET names 'utf8'; select * from analytics_db.vw_purchase_order_diff;" | sed 's/\t/;/g' > purchase_order_diff.csv
+ /usr/bin/mysql --host=$HOST --user=$USER --password=$PASS ods_utf8_db -e "SET names 'utf8'; select * from analytics_db.vw_equipment_diff;" | sed 's/\t/;/g' > equipment_diff.csv
 
  if [ -s "sg_purchase_order_diff.csv" ]
  then
