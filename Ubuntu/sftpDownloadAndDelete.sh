@@ -11,10 +11,10 @@ mget * $TEMP_DIR/
 quit
 EOF
 
-# list of all files to downloaded
+# list of downloaded files
 ls $TEMP_DIR/ > $RECEIVED_FILES
 
-# prefix rm command
+# prefix with rm command
 sed -i -e 's/^/rm "/' $RECEIVED_FILES
 
 # put double quotes around each file to be able to parse spaces
@@ -29,10 +29,10 @@ echo ' ' >> TEMP_SCRIPT.sh
 echo 'EOF' >> TEMP_SCRIPT.sh
 echo ' ' >> TEMP_SCRIPT.sh
 
-# make filelist.txt executable
+# make script executable
 chmod +x TEMP_SCRIPT.sh
 
-# run filelist.txt as a script to remove all files already downloaded
+# run as a script to remove all files already downloaded
 /bin/bash TEMP_SCRIPT.sh
 
 
