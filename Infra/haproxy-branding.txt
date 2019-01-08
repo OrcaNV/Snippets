@@ -1,0 +1,202 @@
+global
+        log /dev/log    local0
+        log /dev/log    local1 notice
+        chroot /var/lib/haproxy
+        stats socket /run/haproxy/admin.sock mode 660 level admin
+        stats timeout 30s
+        user haproxy
+        group haproxy
+        daemon
+
+        # Default SSL material locations
+        ca-base /etc/ssl/certs
+        crt-base /etc/ssl/private
+
+        # Default ciphers to use on SSL-enabled listening sockets.
+        # For more information, see ciphers(1SSL). This list is from:
+        #  https://hynek.me/articles/hardening-your-web-servers-ssl-ciphers/
+  #      ssl-default-bind-ciphers ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:ECDH+3DES:DH+DES:RSA+AESGCM:RSA+AES:RSA+3DES:!aNULL:!MD5:!DSS
+  #      ssl-default-bind-options no-sslv3 no-tls-tickets
+
+#        tune.ssl.default-dh-param 2048
+#
+#        ssl-default-bind-options no-sslv3 no-tls-tickets
+#  ssl-default-bind-ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:AES:CAMELLIA:DES-CBC3-SHA:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!aECDH:!EDH-DSS-DES-CBC3-SHA:!EDH-RSA-DES-CBC3-SHA:!KRB5-DES-CBC3-SHA
+#
+#  ssl-default-server-options no-sslv3 no-tls-tickets
+#  ssl-default-server-ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:AES:CAMELLIA:DES-CBC3-SHA:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!aECDH:!EDH-DSS-DES-CBC3-SHA:!EDH-RSA-DES-CBC3-SHA:!KRB5-DES-CBC3-SHA
+#
+
+   ssl-default-bind-options no-sslv3
+   ssl-default-bind-ciphers ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:RSA+AESGCM:RSA+AES:!aNULL:!MD5:!DSS
+
+   ssl-default-server-options no-sslv3
+   ssl-default-server-ciphers ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:RSA+AESGCM:RSA+AES:!aNULL:!MD5:!DSS
+
+   tune.ssl.default-dh-param 2048
+
+
+defaults
+        log     global
+        mode    http
+
+        maxconn 2048
+#        tune.ssl.default-dh-param 2048
+#       option  forwardfor
+        option  http-server-close
+   stats enable
+   stats uri /stats
+   stats realm Haproxy\ Statistics
+   stats auth admin:Extremely$ecure123
+
+
+        option  httplog
+        option  dontlognull
+        timeout connect 5000
+        timeout client  2m
+        timeout server  2m
+        errorfile 400 /etc/haproxy/errors/400.http
+        errorfile 403 /etc/haproxy/errors/403.http
+        errorfile 408 /etc/haproxy/errors/408.http
+        errorfile 500 /etc/haproxy/errors/500.http
+        errorfile 502 /etc/haproxy/errors/502.http
+        errorfile 503 /etc/haproxy/errors/503.http
+        errorfile 504 /etc/haproxy/errors/504.http
+
+
+
+frontend www
+   bind *:80
+#   reqadd X-Forwarded-Proto:\ http
+#redirect scheme https code 301 if !{ hdr(Host) -i preskofan.com } !{ hdr(Host) -i www.preskofan.com } !{ hdr(Host) -i inspect.preskofan.com.com } !{ hdr(Host) -i api.preskofan.com } !{ ssl_fc }
+   redirect scheme https code 301 if !{ ssl_fc }
+   balance leastconn
+   stick match src
+   stick-table type ip size 200k expire 30m
+   default_backend iis80-backend
+
+
+
+frontend inspect
+   bind *:9444
+#   reqadd X-Forwarded-Proto:\ http
+#redirect scheme https code 301 if !{ hdr(Host) -i preskofan.com } !{ hdr(Host) -i www.preskofan.com } !{ hdr(Host) -i inspect.preskofan.com.com } !{ hdr(Host) -i api.preskofan.com } !{ ssl_fc }
+#   redirect scheme https code 301 if !{ ssl_fc }
+   balance leastconn
+   stick match src
+   stick-table type ip size 200k expire 30m
+   default_backend inspect-backend
+
+
+frontend https
+   bind *:443 ssl crt /etc/ssl/private/preskofan.com.pem   alpn h2,http/1.1
+   # Distinguish between secure and insecure requests
+   acl secure dst_port eq 443
+   # Mark all cookies as secure if sent over SSL
+   rsprep ^Set-Cookie:\ (.*) Set-Cookie:\ \1;\ Secure if secure
+
+   acl h_api       hdr(Host)  -m beg        api.preskofan.com
+   acl h_fi        hdr(Host)  -m beg        fi.preskofan.com
+   acl h_fi_api    hdr(Host)  -m beg        fi-api.preskofan.com
+   acl h_api_fi    hdr(Host)  -m beg        api-fi.preskofan.com
+   acl h_rfp_api   hdr(Host)  -m beg        rfp-api.preskofan.com
+   acl h_api_rfp   hdr(Host)  -m beg        api-rfp.preskofan.com
+
+   # Add the HSTS header with a 1 year max-age
+   rspadd Strict-Transport-Security:\ max-age=31536000 if secure
+   reqadd X-Forwarded-Proto:\ https
+   balance leastconn
+   stick match src
+   stick-table type ip size 200k expire 30m
+
+   use_backend inspect-backend if h_api or h_fi or h_fi_api or h_api_fi or h_rfp_api or h_api_rfp
+   default_backend iis80-backend
+
+
+
+
+backend iis80-backend
+#    stats enable
+#    stats auth admin:Extremely$ecure123
+    bind-process 1
+#    cookie NETSESSIONID prefix
+#    option httpchk HEAD /ping.html HTTP/1.0
+    option httpclose
+    option redispatch
+#    option forwardfor except 10.208.137.248
+        http-request set-header X-Forwarded-Port %[dst_port]
+    http-request add-header X-Forwarded-Proto https if { ssl_fc }
+    http-request set-header X-Forwarded-For %[src]
+#    server app1 10.209.70.52:443 cookie app1 check inter 5000
+#    server app1 10.209.70.52:443 check inter 5000
+
+    # white-labeling - start
+    acl p_style_css          path_end -i  brand.min.css
+
+    acl p_banner_png         path_end -i  banner.png
+    acl p_banner_gif         path_end -i  banner.gif
+    acl p_banner_jpg         path_end -i  banner.jpg
+    acl p_banner_jpeg        path_end -i  banner.jpeg
+
+    acl p_splash_png         path_end -i  splash.png
+    acl p_splash_gif         path_end -i  splash.gif
+    acl p_splash_jpg         path_end -i  splash.jpg
+    acl p_splash_jpeg        path_end -i  splash.jpeg
+
+    acl p_logo_png           path_end -i  logo.png
+    acl p_logo_gif           path_end -i  logo.gif
+    acl p_logo_jpg           path_end -i  logo.jpg
+    acl p_logo_jpeg          path_end -i  logo.jpeg
+
+    acl p_logo_small_png     path_end -i  logo_small.png
+    acl p_logo_small_gif     path_end -i  logo_small.gif
+    acl p_logo_small_jpg     path_end -i  logo_small.jpg
+    acl p_logo_small_jpeg    path_end -i  logo_small.jpeg
+
+    acl h_mrktg    hdr(Host)  -m beg              preskofan.com
+    acl h_www      hdr(Host)  -m beg          www.preskofan.com
+    acl h_members  hdr(Host)  -m beg      members.preskofan.com
+    acl h_fiapi    hdr(Host)  -m beg        fiapi.preskofan.com
+    acl h_admin    hdr(Host)  -m beg        admin.preskofan.com
+
+    http-request set-path /Styles/brand-%[hdr(host)].min.css                 if p_style_css        !h_www !h_members !h_fiapi !h_mrktg !h_admin
+    http-request set-path /Images/brand_logo-%[hdr(host)].png                if p_logo_png         !h_www !h_members !h_fiapi !h_mrktg !h_admin
+    http-request set-path /Images/brand_logo_small-%[hdr(host)].png          if p_logo_small_png   !h_www !h_members !h_fiapi !h_mrktg !h_admin
+    http-request set-path /Images/brand_banner-%[hdr(host)].png              if p_banner_png       !h_www !h_members !h_fiapi !h_mrktg !h_admin
+    http-request set-path /Images/brand_splash-%[hdr(host)].png              if p_splash_png       !h_www !h_members !h_fiapi !h_mrktg !h_admin
+    http-request set-path /Images/brand_logo-%[hdr(host)].gif                if p_logo_gif         !h_www !h_members !h_fiapi !h_mrktg !h_admin
+    http-request set-path /Images/brand_logo_small-%[hdr(host)].gif          if p_logo_small_gif   !h_www !h_members !h_fiapi !h_mrktg !h_admin
+    http-request set-path /Images/brand_banner-%[hdr(host)].gif              if p_banner_gif       !h_www !h_members !h_fiapi !h_mrktg !h_admin
+    http-request set-path /Images/brand_splash-%[hdr(host)].gif              if p_splash_gif       !h_www !h_members !h_fiapi !h_mrktg !h_admin
+    http-request set-path /Images/brand_logo-%[hdr(host)].jpg                if p_logo_jpg         !h_www !h_members !h_fiapi !h_mrktg !h_admin
+    http-request set-path /Images/brand_logo_small-%[hdr(host)].jpg          if p_logo_small_jpg   !h_www !h_members !h_fiapi !h_mrktg !h_admin
+    http-request set-path /Images/brand_banner-%[hdr(host)].jpg              if p_banner_jpg       !h_www !h_members !h_fiapi !h_mrktg !h_admin
+    http-request set-path /Images/brand_splash-%[hdr(host)].jpg              if p_splash_jpg       !h_www !h_members !h_fiapi !h_mrktg !h_admin
+    http-request set-path /Images/brand_logo-%[hdr(host)].jpeg               if p_logo_jpeg        !h_www !h_members !h_fiapi !h_mrktg !h_admin
+    http-request set-path /Images/brand_logo_small-%[hdr(host)].jpeg         if p_logo_small_jpeg  !h_www !h_members !h_fiapi !h_mrktg !h_admin
+    http-request set-path /Images/brand_banner-%[hdr(host)].jpeg             if p_banner_jpeg      !h_www !h_members !h_fiapi !h_mrktg !h_admin
+    http-request set-path /Images/brand_splash-%[hdr(host)].jpeg             if p_splash_jpeg      !h_www !h_members !h_fiapi !h_mrktg !h_admin
+    # white-labeling - end
+
+    server iis1 10.209.70.52:80 check
+
+
+
+
+
+backend inspect-backend
+#    stats enable
+#    stats auth admin:Extremely$ecure123
+    bind-process 1
+#    cookie NETSESSIONID prefix
+#    option httpchk HEAD /ping.html HTTP/1.0
+    option httpclose
+    option redispatch
+#    option forwardfor except 10.208.137.248
+        http-request set-header X-Forwarded-Port %[dst_port]
+    http-request add-header X-Forwarded-Proto https if { ssl_fc }
+    http-request set-header X-Forwarded-For %[src]
+#    server app1 10.209.70.52:443 cookie app1 check inter 5000
+#    server app1 10.209.70.52:443 check inter 5000
+    server iis1 10.209.70.52:9444 check
+
