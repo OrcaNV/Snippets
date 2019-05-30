@@ -22,7 +22,7 @@ sudo letsencrypt-auto renew --webroot -w /var/www/html
 #NOTE: if using nginx
 #
 # sudo vi /var/opt/gitlab/nginx/conf/gitlab-http.conf
-#    #ssl_certificate /etc/gitlab/ssl/git.sensortransport.com.crt;
-#    #ssl_certificate_key /etc/gitlab/ssl/git.sensortransport.com.key;
-#    ssl_certificate      /etc/letsencrypt/live/git.sensortransport.com/fullchain.pem;
-#    ssl_certificate_key  /etc/letsencrypt/live/git.sensortransport.com/privkey.pem;
+#    #ssl_certificate /etc/gitlab/ssl/git.preskofan.com.crt;
+#    #ssl_certificate_key /etc/gitlab/ssl/git.preskofan.com.key;
+#    ssl_certificate      /etc/letsencrypt/live/git.preskofan.com/fullchain.pem;
+#    ssl_certificate_key  /etc/letsencrypt/live/git.preskofan.com/privkey.pem;
