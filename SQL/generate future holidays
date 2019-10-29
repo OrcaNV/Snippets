@@ -1,0 +1,31 @@
+-- Inspired by this https://www.sqlservercentral.com/forums/topic/federal-holiday-function
+
+DECLARE @start_date date = DATEADD(yy, DATEDIFF(yy, 0, GETDATE()) + 1, 0);
+DECLARE @end_date date = dateadd(year,40,@start_date); -- next 40 years
+
+WITH  AllDays
+    AS ( 
+     SELECT @start_date AS [Date],  month( @start_date) as mnth, Day( @start_date) as dayofM, DateName(weekday, @start_date) as dtname
+        UNION ALL
+     SELECT  
+              DATEADD(DAY, 1, [Date]), month( DATEADD(DAY, 1, [Date])) as mnth, Day( DATEADD(DAY, 1, [Date])) as dayofM, DateName(weekday,DATEADD(DAY, 1, [Date])) as dtname
+             FROM   AllDays
+             WHERE  [Date] < @end_date  
+             )
+   INSERT INTO dbo.Holiday (HolidayTypeId, HolidayDate, Description)
+   SELECT 2, [Date], dbo.sf_isFederalHoliday ([Date]) -- Holiday, mnth, dayofM, dtname
+   FROM AllDays 
+    where  
+          (     (mnth =1 and dayofM = 1)                                              /* new years */
+        or      (mnth =1 and dayofM  between 15 and 22 and dtname = 'Monday')         /* MLK Day - 3rd monday of January */
+        or      (mnth =2 and dayofM  between 15 and 22 and dtname = 'Monday')         /* Presidents' Day - 3rd monday of February */
+        or      (mnth =5 and dayofM >= 25 and dtname = 'Monday')                      /* memorial day */
+        or      (mnth =7 and dayofM = 4)                                              /* Indendence day */
+        or      (mnth =9 and dayofM  <= 7 and dtname = 'Monday')                      /* Labour day */
+        or      (mnth =10 and dayofM  between 8 and 15 and dtname = 'Monday')         /* Columbus Day - 2nd Monday in October */
+        or      (mnth =11 and dayofM = 11)                                            /* Veterans Day */
+        or      (mnth =11 and dayofM between 22 and 28 and dtname = 'Thursday')       /* Thanksgiving - 4th Thursday */
+        or      (mnth =12 and dayofM = 25)                                            /* Xmas */
+        )
+        OPTION (MAXRECURSION 0)
+
