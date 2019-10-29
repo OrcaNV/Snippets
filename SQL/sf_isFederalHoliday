@@ -1,0 +1,32 @@
+-- DROP FUNCTION [dbo].isGdnFederalHoliday (@candidateDt datetime)
+CREATE FUNCTION [dbo].isGdnFederalHoliday (@candidateDt datetime)
+returns varchar(max)
+AS
+BEGIN
+  DECLARE @mnth as int = month( @candidateDt);
+  DECLARE @dayofM as int = Day( @candidateDt);
+  DECLARE @dtname as varchar(max) = DateName(weekday, @candidateDt);
+  DECLARE @theHoliday as varchar(max) = '';
+  
+  IF (@mnth =1 and @dayofM = 1) 
+	SET @theHoliday = 'New Year''s Day';
+  ELSE IF (@mnth =1 and @dayofM  between 15 and 22 and @dtname = 'Monday')
+	SET @theHoliday = 'Martin Luther King Day';         -- MLK Day - 3rd monday of January
+  ELSE IF (@mnth =2 and @dayofM  between 15 and 22 and @dtname = 'Monday')
+    SET @theHoliday = 'President''s Day';        -- Presidents' Day - 3rd monday of February
+  ELSE IF (@mnth =5 and @dayofM >= 25 and @dtname = 'Monday')                
+    SET @theHoliday = 'Memorial Day';         -- memorial day
+  ELSE IF (@mnth =7 and @dayofM = 4)                                         
+    SET @theHoliday = 'Independence Day';       -- Indendence day
+  ELSE IF (@mnth =9 and @dayofM  <= 7 and @dtname = 'Monday')                
+    SET @theHoliday = 'Labor Day';        -- Labor day
+  ELSE IF (@mnth =10 and @dayofM  between 8 and 15 and @dtname = 'Monday')   
+    SET @theHoliday = 'Indigenous People''s Day';        -- Columbus Day - 2nd Monday in October
+  ELSE IF (@mnth =11 and @dayofM = 11)                                       
+    SET @theHoliday = 'Veterans Day';       -- Veterans Day
+  ELSE IF (@mnth =11 and @dayofM between 22 and 28 and @dtname = 'Thursday') 
+    SET @theHoliday = 'Thanksgiving Day';      -- Thanksgiving - 4th Thursday
+  ELSE IF (@mnth =12 and @dayofM = 25)                                       
+    SET @theHoliday = 'Christmas Day';     -- Xmas
+  return @theHoliday;
+end
