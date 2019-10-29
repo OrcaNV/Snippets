@@ -1,5 +1,5 @@
--- DROP FUNCTION [dbo].isGdnFederalHoliday (@candidateDt datetime)
-CREATE FUNCTION [dbo].isGdnFederalHoliday (@candidateDt datetime)
+-- DROP FUNCTION [dbo].sf_isFederalHoliday (@candidateDt datetime)
+CREATE FUNCTION [dbo].sf_isFederalHoliday (@candidateDt datetime)
 returns varchar(max)
 AS
 BEGIN
