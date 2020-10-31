@@ -27,14 +27,15 @@ for /f %%a IN ('dir /b/a-d *.txt') do (
    if not exist %%~dpa%yy%                  mkdir %%~dpa%yy%
    if not exist %%~dpa%yy%\%mm%             mkdir %%~dpa%yy%\%mm%
    rem if not exist %%~dpa%yy%\%mm%\%dd%-%dow%  mkdir %%~dpa%yy%\%mm%\%dd%-%dow%
-   echo fullpath=%%~fa
+   rem echo fullpath=%%~fa
    rem ECHO filedrive=%%~da
    rem ECHO filepath=%%~pa
    rem ECHO filename=%%~na
    rem ECHO fileextension=%%~xa
    rem ECHO filename_ext=%%~nxa
+   echo Adding %%~fa to %%~dpa%yy%\%mm%\logs-%yy%%mm%%dd%-%dow%.zip
 
-   C:\zip-3.0\bin\zip -u %%~dpa%yy%\%mm%\logs-%yy%%mm%%dd%-%dow%.zip  %%~nxa
+   C:\st\zip-3.0\bin\zip -u %%~dpa%yy%\%mm%\logs-%yy%%mm%%dd%-%dow%.zip  %%~nxa
    del %%~fa
    rem move %%~fa  %%~dpa%yy%\%mm%\%dd%-%dow%\
 )
