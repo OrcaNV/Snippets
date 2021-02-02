@@ -1,0 +1,188 @@
+global
+        log /dev/log    local0
+        log /dev/log    local1 notice
+        chroot /var/lib/haproxy
+        stats socket /run/haproxy/admin.sock mode 660 level admin
+        stats timeout 30s
+        user haproxy
+        group haproxy
+        daemon
+
+        # Default SSL material locations
+        ca-base /etc/ssl/certs
+        crt-base /etc/ssl/private
+
+        # Default ciphers to use on SSL-enabled listening sockets.
+        # For more information, see ciphers(1SSL). This list is from:
+        #  https://hynek.me/articles/hardening-your-web-servers-ssl-ciphers/
+       # ssl-default-bind-ciphers ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+3DES:!aNULL:!MD5:!DSS
+	ssl-default-bind-ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-GCM-SHA384:AES128-SHA256:AES128-SHA:AES256-SHA256:AES256-SHA:!MD5:!aNULL:!DH:!RC4:!DSS
+
+        ssl-default-bind-options no-sslv3 no-tls-tickets
+
+        tune.ssl.default-dh-param 2048
+        maxconn 2048
+
+
+defaults
+        log     global
+        mode    http
+        option  httplog
+        option  dontlognull
+        timeout connect 5000
+        timeout client  50000
+#        timeout server  50000
+        timeout server  600000ms
+        errorfile 400 /etc/haproxy/errors/400.http
+        errorfile 403 /etc/haproxy/errors/403.http
+        errorfile 408 /etc/haproxy/errors/408.http
+        errorfile 500 /etc/haproxy/errors/500.http
+        errorfile 502 /etc/haproxy/errors/502.http
+        errorfile 503 /etc/haproxy/errors/503.http
+        errorfile 504 /etc/haproxy/errors/504.http
+
+        retries 3
+        option redispatch
+        option httpclose
+        option forwardfor
+        option http-server-close
+
+    stats enable  # Enable stats page
+    stats hide-version  # Hide HAProxy version
+    stats refresh 5s
+    stats show-node
+    stats auth theUser:thePassword
+
+
+# Just go to https://site.currentDomain.com/haproxy?stats
+#listen stats
+#    bind *:1999
+#    stats enable
+#    stats hide-version
+#    stats uri /stats
+#    stats auth theUser:thePassword
+
+
+frontend www-http
+   bind *:80
+   # reqadd X-Forwarded-Proto:\ http
+   http-request add-header X-Forwarded-Proto http
+#   redirect scheme https code 301
+   redirect scheme https code 301 if  !{ hdr(Host) -i api.olderDomain.com }
+   default_backend www-backend
+
+frontend www-https
+   bind *:443 ssl crt /etc/haproxy/certs/site.currentDomain.com.pem
+   # Bind SSL port with PFS-enabling cipher suite
+   #bind :443 ssl crt  /etc/haproxy/certs/site.currentDomain.com.pem  no-tls-tickets ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-GCM-SHA384:AES128-SHA256:AES128-SHA:AES256-SHA256:AES256-SHA:!MD5:!aNULL:!DH:!RC4
+
+   # Distinguish between secure and insecure requests
+   acl secure dst_port eq 443
+
+   # LetsEncrypt / Certbot?
+   acl letsencrypt-acl path_beg /.well-known/acme-challenge/
+
+   # Mark all cookies as secure if sent over SSL
+   # rsprep ^Set-Cookie:\ (.*) Set-Cookie:\ \1;\ Secure if secure
+   http-response replace-header Set-Cookie (.*) \1;\ Secure
+
+   # Add the HSTS header with a 1 year max-age
+   #rspadd Strict-Transport-Security:\ max-age=31536000 if secure
+    # max-age is mandatory 
+    # 16000000 seconds is a bit more than 6 months
+    http-response set-header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload;"
+
+
+   #redirect prefix http://foo.com code 301 if { hdr(host) -i www.bar.com }
+   http-request redirect location https://currentDomain.com/sentra-scanner-guide/ code 301 if !letsencrypt-acl { hdr(Host) -i tz.currentDomain.com }
+   http-request redirect location https://currentDomain.com/sentra-scanner-guide/ code 301 if !letsencrypt-acl { hdr(Host) -i tz.sentrascan.com }
+   # reqadd X-Forwarded-Proto:\ https
+   http-request add-header X-Forwarded-Proto https
+    compression algo gzip
+    compression type text/html text/plain text/javascript application/javascript application/xml text/css
+   acl is_flightstats hdr_sub(host) -i soar.otherCurrentDomain.com
+   acl is_rsvp        hdr_sub(host) -i sched.otherCurrentDomain.com
+   acl is_member      hdr_sub(host) -i member.currentDomain.com
+   acl is_member      hdr_sub(host) -i member.otherCurrentDomain.com
+   acl is_qa_comcon   hdr_sub(host) -i qa-comcon.currentDomain.com
+   acl is_qa_comcon2  hdr_sub(host) -i qa-comcon.otherCurrentDomain.com
+   acl is_qa_comcon3  hdr_sub(host) -i beta-comcon.currentDomain.com
+   acl is_qa_comcon4  hdr_sub(host) -i beta-comcon.otherCurrentDomain.com
+   acl is_qa_rsvp     hdr_sub(host) -i qa-rsvp.currentDomain.com
+   acl is_qa_rsvp2    hdr_sub(host) -i qa-rsvp.otherCurrentDomain.com
+   acl is_qa_rsvp3    hdr_sub(host) -i beta-rsvp.currentDomain.com
+   acl is_qa_rsvp4    hdr_sub(host) -i beta-rsvp.otherCurrentDomain.com
+   acl is_qa_portal   hdr_sub(host) -i qa-portal.currentDomain.com
+   acl is_qa_portal2  hdr_sub(host) -i qa-portal.otherCurrentDomain.com
+   acl is_qa_portal3  hdr_sub(host) -i beta-portal.currentDomain.com
+   acl is_qa_portal4  hdr_sub(host) -i beta-portal.otherCurrentDomain.com
+# { path -i -m beg /static }
+   acl is_letsencrypt path_sub acme-challenge
+   use_backend flightstats if  is_flightstats !is_letsencrypt
+   use_backend rsvp_backend if  is_rsvp !is_letsencrypt
+   use_backend qa_comcon_backend if  is_qa_comcon  !is_letsencrypt
+   use_backend qa_comcon_backend if  is_qa_comcon2 !is_letsencrypt
+   use_backend qa_comcon_backend if  is_qa_comcon3 !is_letsencrypt
+   use_backend qa_comcon_backend if  is_qa_comcon4 !is_letsencrypt
+   use_backend qa_rsvp_backend   if  is_qa_rsvp    !is_letsencrypt
+   use_backend qa_rsvp_backend   if  is_qa_rsvp2   !is_letsencrypt
+   use_backend qa_rsvp_backend   if  is_qa_rsvp3   !is_letsencrypt
+   use_backend qa_rsvp_backend   if  is_qa_rsvp4   !is_letsencrypt
+   use_backend qa_portal_backend if  is_qa_portal  !is_letsencrypt
+   use_backend qa_portal_backend if  is_qa_portal2 !is_letsencrypt
+   use_backend qa_portal_backend if  is_qa_portal3 !is_letsencrypt
+   use_backend qa_portal_backend if  is_qa_portal4 !is_letsencrypt
+   use_backend qa_portal_backend if  is_member     !is_letsencrypt
+   default_backend www-backend
+
+backend rsvp_backend
+   bind-process 1
+#   option httpchk HEAD /ping.html HTTP/1.0
+   option httpclose
+   option redispatch
+#   redirect scheme https if !{ ssl_fc }
+
+   # reqrep ^GET\ /(.*) GET\ /rsvp/\1
+   # prefix /foo : turn /bar?q=1 into /foo/bar?q=1 :
+   # http-request replace-path (.*) /rsvp\1
+
+   server app5 127.0.0.1:3002 cookie rsvp01 check fastinter 500
+
+
+backend qa_comcon_backend
+   bind-process 1
+#   option httpchk HEAD /ping.html HTTP/1.0
+   option httpclose
+   option redispatch
+#   redirect scheme https if !{ ssl_fc }
+   server bcc3 127.0.0.1:3003 cookie bc01 check fastinter 500
+
+backend qa_rsvp_backend
+   bind-process 1
+   option httpclose
+   option redispatch
+   server brs3 127.0.0.1:3004 cookie br01 check fastinter 500
+
+backend qa_portal_backend
+   bind-process 1
+   option httpclose
+   option redispatch
+   server bpr3 127.0.0.1:3005 cookie bp01 check fastinter 500
+
+backend flightstats
+   bind-process 1
+   option httpclose
+   option redispatch
+   server app3 127.0.0.1:3001 cookie fs01 check fastinter 500
+
+backend www-backend
+   stats enable
+   stats auth admin:Extremely$ecure123
+   bind-process 1
+#   option httpchk HEAD /ping.html HTTP/1.0
+   option httpclose
+   option redispatch
+#   redirect scheme https if !{ ssl_fc }
+   redirect scheme https if !{ ssl_fc } !{ hdr(Host) -i api.olderDomain.com }
+   server app3 127.0.0.1:3000 cookie app3 check fastinter 500
+
